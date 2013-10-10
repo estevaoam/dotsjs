@@ -18,6 +18,7 @@ DotsController.start();
 var animate = function(){
   renderer.render(stage);
   requestAnimFrame(animate);
+  TWEEN.update();
 }
 
 requestAnimFrame(animate);

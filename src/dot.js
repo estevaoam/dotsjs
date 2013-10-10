@@ -1,10 +1,12 @@
-// Dot class
 var Dot = function(x, y){
   this.defaultRadius = Dot.Defaults.defaultRadius;
   this.createObject(x, y);
   return this;
 }
 
+/*
+ * Default attributes for dots
+*/
 Dot.Defaults = {
   defaultRadius: 8,
   availableColors: [
@@ -16,41 +18,70 @@ Dot.Defaults = {
   ]
 }
 
+/*
+ * Create the displayObject
+ * of the dots.
+*/
 Dot.prototype.createObject = function(x, y){
   var element = this.element = new PIXI.Graphics();
   var x = x + 50;
   var y = y + 50;
   var color = this.generateColor();
+  var widthAndHeight = this.defaultRadius*2;
 
-  element.moveTo(x, y);
+  element.position.x = x;
+  element.position.y = y;
+
   element.beginFill(color);
   element.lineStyle(1, color, 0.5);
-  element.drawCircle(x, y, this.defaultRadius);
+  element.drawCircle(0, 0, this.defaultRadius);
   element.endFill();
 
   element.interactive = true;
-  widthAndHeight = this.defaultRadius*2;
-  element.hitArea = new PIXI.Rectangle(x - this.defaultRadius, y - this.defaultRadius, widthAndHeight, widthAndHeight);
+  element.buttonMode = true;
+
+  element.hitArea = new PIXI.Rectangle(-this.defaultRadius, -this.defaultRadius, widthAndHeight, widthAndHeight);
 
   this.setupEvents(element);
   return this.element;
 }
 
+/*
+ * Setup event handlers for mouseover
+ * and mousedown.
+*/
 Dot.prototype.setupEvents = function(element){
-  element.mousedown = element.touchstart = function(data){
-    this.alpha = 0.5;
-
-    this.mousemove = this.touchmove = this.mouseupoutsite = this.touchendoutsite = function(data){
-      console.log(data.target);
+  var _self = this;
+  element.mouseover = function(data) {
+    if (DotsController.isMouseDown === true) {
+      DotsController.hoverDot(_self);
     }
+  }
 
-    this.mouseup = this.touchend = this.mouseupoutside = this.touchendoutside = function(data){
-      this.mousemove = this.touchmove = null;
-    }
+  element.mousedown = function(data) {
+    DotsController.hoverDot(_self);
   }
 }
 
+/*
+ * Check if a dot can connect to other
+*/
+Dot.prototype.canConnect = function(dot){
+  var distance = 0.0;
+
+  distance = Math.pow((dot.matrixPos.x - this.matrixPos.x), 2);
+  distance = distance + Math.pow((dot.matrixPos.y - this.matrixPos.y), 2);
+  distance = Math.sqrt(distance);
+
+  return (distance <= 1.0 && dot.element.lineColor == this.element.lineColor);
+}
+
+/*
+ * Generate color for the dot
+*/
 Dot.prototype.generateColor = function(){
   var chosenColor = Dot.Defaults.availableColors[randomTo(Dot.Defaults.availableColors.length)];
   return chosenColor;
 }
+
+Dot.constructor = Dot;
