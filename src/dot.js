@@ -81,6 +81,23 @@ Dot.prototype.canConnect = function(dot){
   return (distance <= 1.0 && dot.element.lineColor == this.element.lineColor);
 }
 
+Dot.prototype.release = function(){
+  var element = this.element;
+
+  var tweenAlpha = new TWEEN.Tween(element);
+  tweenAlpha.to({ alpha: 0 }, 150);
+  tweenAlpha.start();
+
+  var tweenScale = new TWEEN.Tween(element.scale);
+
+  tweenScale.to({ x: 0, y: 0 }, 150);
+  tweenScale.onComplete(function(){
+    this.clear;
+    stage.removeChild(this);
+  }.bind(element));
+  tweenScale.start();
+}
+
 /*
  * Generate color for the dot
 */

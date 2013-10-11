@@ -13,6 +13,7 @@ var DotsController = {
 
 DotsController.start = function(){
   DotMatrix.start();
+  DotsController.renderPoints();
 }
 
 /*
@@ -21,12 +22,13 @@ DotsController.start = function(){
  * receive the dot that it's over
 */
 DotsController.hoverDot = function(dot) {
-  if(dot.connected) { return true; };
+  if (dot.connected) { return true; };
 
   var length = this.connectedDots.length;
 
   if (length == 0 || dot.canConnect(this.connectedDots[length - 1])) {
     dot.connected = true;
+    dot.animateHover();
     this.connectedDots.push(dot);
   }
 }
@@ -37,14 +39,34 @@ DotsController.releaseDots = function(){
 
     if (DotsController.connectedDots.length > 1) {
       DotMatrix.releaseDot(dot);
+      DotsController.increasePoints(1);
     }
 
     dot.connected = false;
   }
 
-
   DotMatrix.repopulate();
   DotsController.connectedDots = [];
+}
+
+DotsController.increasePoints = function(number) {
+  DotsController.userPoints = DotsController.userPoints + number;
+  DotsController.renderPoints();
+}
+
+DotsController.decreasePoints = function(number) {
+  DotsController.userPoints = DotsController.userPoints - number;
+  DotsController.renderPoints();
+}
+
+DotsController.renderPoints = function() {
+  if (DotsController._userPointsElement === undefined) {
+    DotsController._userPointsElement = new PIXI.Text(DotsController.userPoints, { font: "16px Arial" });
+    DotsController._userPointsElement.position = new PIXI.Point(10, 10);
+    stage.addChild(DotsController._userPointsElement);
+  } else {
+    DotsController._userPointsElement.setText(DotsController.userPoints);
+  }
 }
 
 DotsController.onMouseDown = function(event) {
@@ -57,6 +79,7 @@ DotsController.onMouseUp = function(event) {
 }
 
 DotsController.onTouchDown = DotsController.onMouseDown;
+DotsController.onTouchUp   = DotsController.onMouseUp;
 
 $(document).on('mousedown', DotsController.onMouseDown);
 $(document).on('mouseup', DotsController.onMouseUp);

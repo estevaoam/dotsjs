@@ -4,6 +4,8 @@ var renderer = PIXI.autoDetectRenderer(320, 568, null, false, true);
 
 document.body.appendChild(renderer.view);
 
+var canvas = $('canvas');
+
 // Utils
 function randomTo(number) {
   var number = Math.floor(Math.random() * number);

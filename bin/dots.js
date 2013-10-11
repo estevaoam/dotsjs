@@ -117,6 +117,23 @@ Dot.prototype.canConnect = function(dot){
   return (distance <= 1.0 && dot.element.lineColor == this.element.lineColor);
 }
 
+Dot.prototype.release = function(){
+  var element = this.element;
+
+  var tweenAlpha = new TWEEN.Tween(element);
+  tweenAlpha.to({ alpha: 0 }, 150);
+  tweenAlpha.start();
+
+  var tweenScale = new TWEEN.Tween(element.scale);
+
+  tweenScale.to({ x: 0, y: 0 }, 150);
+  tweenScale.onComplete(function(){
+    this.clear;
+    stage.removeChild(this);
+  }.bind(element));
+  tweenScale.start();
+}
+
 /*
  * Generate color for the dot
 */
@@ -169,7 +186,7 @@ DotMatrix.releaseDot = function(dot){
   var y = dot.matrixPos.y;
 
   this.matrix[x][y] = dot.element.position.clone();
-  stage.removeChild(dot.element);
+  dot.release();
 }
 
 /*
@@ -185,8 +202,8 @@ DotMatrix.repopulate = function(){
           if (this.matrix[x][c].x === undefined) {
             var upperDot = this.matrix[x][c];
             var tween = new TWEEN.Tween(upperDot.element.position)
-                                 .to(dot.clone())
-                                 .easing(TWEEN.Easing.Elastic.InOut);
+                                 .to(dot.clone(), 500)
+                                 .easing(TWEEN.Easing.Bounce.Out);
 
             tween.onUpdate(upperDot.updateHitArea.bind(upperDot));
             tween.start();
@@ -217,6 +234,7 @@ var DotsController = {
 
 DotsController.start = function(){
   DotMatrix.start();
+  DotsController.renderPoints();
 }
 
 /*
@@ -225,12 +243,13 @@ DotsController.start = function(){
  * receive the dot that it's over
 */
 DotsController.hoverDot = function(dot) {
-  if(dot.connected) { return true; };
+  if (dot.connected) { return true; };
 
   var length = this.connectedDots.length;
 
   if (length == 0 || dot.canConnect(this.connectedDots[length - 1])) {
     dot.connected = true;
+    dot.animateHover();
     this.connectedDots.push(dot);
   }
 }
@@ -241,14 +260,34 @@ DotsController.releaseDots = function(){
 
     if (DotsController.connectedDots.length > 1) {
       DotMatrix.releaseDot(dot);
+      DotsController.increasePoints(1);
     }
 
     dot.connected = false;
   }
 
-
   DotMatrix.repopulate();
   DotsController.connectedDots = [];
+}
+
+DotsController.increasePoints = function(number) {
+  DotsController.userPoints = DotsController.userPoints + number;
+  DotsController.renderPoints();
+}
+
+DotsController.decreasePoints = function(number) {
+  DotsController.userPoints = DotsController.userPoints - number;
+  DotsController.renderPoints();
+}
+
+DotsController.renderPoints = function() {
+  if (DotsController._userPointsElement === undefined) {
+    DotsController._userPointsElement = new PIXI.Text(DotsController.userPoints, { font: "16px Arial" });
+    DotsController._userPointsElement.position = new PIXI.Point(10, 10);
+    stage.addChild(DotsController._userPointsElement);
+  } else {
+    DotsController._userPointsElement.setText(DotsController.userPoints);
+  }
 }
 
 DotsController.onMouseDown = function(event) {
@@ -261,6 +300,7 @@ DotsController.onMouseUp = function(event) {
 }
 
 DotsController.onTouchDown = DotsController.onMouseDown;
+DotsController.onTouchUp   = DotsController.onMouseUp;
 
 $(document).on('mousedown', DotsController.onMouseDown);
 $(document).on('mouseup', DotsController.onMouseUp);
@@ -271,6 +311,8 @@ var stage = new PIXI.Stage(0xEEEEEE, true);
 var renderer = PIXI.autoDetectRenderer(320, 568, null, false, true);
 
 document.body.appendChild(renderer.view);
+
+var canvas = $('canvas');
 
 // Utils
 function randomTo(number) {

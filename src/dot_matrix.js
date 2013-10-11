@@ -41,7 +41,7 @@ DotMatrix.releaseDot = function(dot){
   var y = dot.matrixPos.y;
 
   this.matrix[x][y] = dot.element.position.clone();
-  stage.removeChild(dot.element);
+  dot.release();
 }
 
 /*
@@ -57,8 +57,8 @@ DotMatrix.repopulate = function(){
           if (this.matrix[x][c].x === undefined) {
             var upperDot = this.matrix[x][c];
             var tween = new TWEEN.Tween(upperDot.element.position)
-                                 .to(dot.clone())
-                                 .easing(TWEEN.Easing.Elastic.InOut);
+                                 .to(dot.clone(), 500)
+                                 .easing(TWEEN.Easing.Bounce.Out);
 
             tween.onUpdate(upperDot.updateHitArea.bind(upperDot));
             tween.start();
