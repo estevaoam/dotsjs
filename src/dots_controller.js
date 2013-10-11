@@ -42,8 +42,9 @@ DotsController.releaseDots = function(){
     dot.connected = false;
   }
 
-  DotsController.connectedDots = [];
+
   DotMatrix.repopulate();
+  DotsController.connectedDots = [];
 }
 
 DotsController.onMouseDown = function(event) {

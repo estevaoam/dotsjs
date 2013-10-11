@@ -46,6 +46,11 @@ Dot.prototype.createObject = function(x, y){
   return this.element;
 }
 
+Dot.prototype.updateHitArea = function() {
+  var widthAndHeight = this.defaultRadius * 2;
+  this.element.hitArea = new PIXI.Rectangle(-1*this.defaultRadius, -1*this.defaultRadius, widthAndHeight, widthAndHeight);
+}
+
 /*
  * Setup event handlers for mouseover
  * and mousedown.
