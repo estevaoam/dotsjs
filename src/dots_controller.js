@@ -5,6 +5,7 @@
 */
 var DotsController = {
   connectedDots: [],
+  lines: [],
   userPoints: 0,
   timeLeft: 60,
   isMouseDown: false,
@@ -28,6 +29,11 @@ DotsController.hoverDot = function(dot) {
 
   if (length == 0 || dot.canConnect(this.connectedDots[length - 1])) {
     dot.connected = true;
+    if (length > 0) {
+      // Connects to the last dot
+      dot.connectTo(this.connectedDots[length - 1]);
+    }
+
     dot.animateHover();
     this.connectedDots.push(dot);
   }
@@ -45,6 +51,13 @@ DotsController.releaseDots = function(){
     dot.connected = false;
   }
 
+  for (i in DotsController.lines) {
+    var line = DotsController.lines[i];
+    line.clear();
+    stage.removeChild(line);
+  }
+
+  DotsController.lines = [];
   DotMatrix.repopulate();
   DotsController.connectedDots = [];
 }

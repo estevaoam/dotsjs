@@ -1,6 +1,6 @@
-var Dot = function(x, y){
+var Dot = function(x, y, color) {
   this.defaultRadius = Dot.Defaults.defaultRadius;
-  this.createObject(x, y);
+  this.createObject(x, y, color);
   return this;
 }
 
@@ -22,11 +22,13 @@ Dot.Defaults = {
  * Create the displayObject
  * of the dots.
 */
-Dot.prototype.createObject = function(x, y){
+Dot.prototype.createObject = function(x, y, color){
   var element = this.element = new PIXI.Graphics();
   var x = x + 50;
   var y = y + 50;
-  var color = this.generateColor();
+  if (color === undefined) {
+    var color = this.generateColor();
+  }
   var widthAndHeight = this.defaultRadius*2;
 
   element.position.x = x;
@@ -44,6 +46,11 @@ Dot.prototype.createObject = function(x, y){
 
   this.setupEvents(element);
   return this.element;
+}
+
+Dot.cloneElement = function(dotElement) {
+  var dot = new Dot(dotElement.position.x, dotElement.position.y, dotElement.lineColor);
+  return dot.element;
 }
 
 Dot.prototype.updateHitArea = function() {
@@ -102,8 +109,56 @@ Dot.prototype.release = function(){
  * Generate color for the dot
 */
 Dot.prototype.generateColor = function(){
-  var chosenColor = Dot.Defaults.availableColors[randomTo(Dot.Defaults.availableColors.length)];
+  var randomIndex = randomTo(Dot.Defaults.availableColors.length);
+  var chosenColor = Dot.Defaults.availableColors[randomIndex];
   return chosenColor;
+}
+
+/*
+ * Animate when hovering the dot
+*/
+Dot.prototype.animateHover = function(){
+  var copyDot = Dot.cloneElement(this.element);
+  copyDot.position = this.element.position.clone();
+  copyDot.interactive = false;
+
+  var tweenScale = new TWEEN.Tween(copyDot.scale);
+  tweenScale.to({ x: 2, y: 2 }, 350);
+  tweenScale.start();
+
+  var tweenAlpha = new TWEEN.Tween(copyDot);
+  tweenAlpha.to({ alpha: 0 }, 400);
+  tweenAlpha.onComplete(function(){
+    this.clear;
+    stage.removeChild(this);
+  }.bind(copyDot));
+  tweenAlpha.start();
+
+  stage.addChild(copyDot);
+}
+
+/*
+ * Function to connect to another point.
+ * Draws a line that connects all points.
+*/
+Dot.prototype.connectTo = function(dot) {
+  this.drawLineTo(dot.element.position);
+}
+
+Dot.prototype.drawLineTo = function(point) {
+  var x = point.x;
+  var y = point.y;
+  var line = this.line = new PIXI.Graphics();
+  var color = this.element.lineColor;
+
+  line.beginFill(color);
+  line.lineStyle(this.defaultRadius/2, color);
+  line.moveTo(this.element.position.x, this.element.position.y);
+  line.lineTo(x, y);
+  line.endFill();
+
+  DotsController.lines.push(line);
+  stage.addChild(line);
 }
 
 Dot.constructor = Dot;

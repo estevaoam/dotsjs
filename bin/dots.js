@@ -34,9 +34,9 @@ TWEEN.Easing.Bounce.Out(1-a)},Out:function(a){return a<1/2.75?7.5625*a*a:a<2/2.7
 TWEEN.Interpolation={Linear:function(a,c){var b=a.length-1,d=b*c,e=Math.floor(d),g=TWEEN.Interpolation.Utils.Linear;return 0>c?g(a[0],a[1],d):1<c?g(a[b],a[b-1],b-d):g(a[e],a[e+1>b?b:e+1],d-e)},Bezier:function(a,c){var b=0,d=a.length-1,e=Math.pow,g=TWEEN.Interpolation.Utils.Bernstein,h;for(h=0;h<=d;h++)b+=e(1-c,d-h)*e(c,h)*a[h]*g(d,h);return b},CatmullRom:function(a,c){var b=a.length-1,d=b*c,e=Math.floor(d),g=TWEEN.Interpolation.Utils.CatmullRom;return a[0]===a[b]?(0>c&&(e=Math.floor(d=b*(1+c))),g(a[(e-
 1+b)%b],a[e],a[(e+1)%b],a[(e+2)%b],d-e)):0>c?a[0]-(g(a[0],a[0],a[1],a[1],-d)-a[0]):1<c?a[b]-(g(a[b],a[b],a[b-1],a[b-1],d-b)-a[b]):g(a[e?e-1:0],a[e],a[b<e+1?b:e+1],a[b<e+2?b:e+2],d-e)},Utils:{Linear:function(a,c,b){return(c-a)*b+a},Bernstein:function(a,c){var b=TWEEN.Interpolation.Utils.Factorial;return b(a)/b(c)/b(a-c)},Factorial:function(){var a=[1];return function(c){var b=1,d;if(a[c])return a[c];for(d=c;1<d;d--)b*=d;return a[c]=b}}(),CatmullRom:function(a,c,b,d,e){var a=0.5*(b-a),d=0.5*(d-c),g=
 e*e;return(2*c-2*b+a+d)*e*g+(-3*c+3*b-2*a-d)*g+a*e+c}}};
-;var Dot = function(x, y){
+;var Dot = function(x, y, color) {
   this.defaultRadius = Dot.Defaults.defaultRadius;
-  this.createObject(x, y);
+  this.createObject(x, y, color);
   return this;
 }
 
@@ -58,11 +58,13 @@ Dot.Defaults = {
  * Create the displayObject
  * of the dots.
 */
-Dot.prototype.createObject = function(x, y){
+Dot.prototype.createObject = function(x, y, color){
   var element = this.element = new PIXI.Graphics();
   var x = x + 50;
   var y = y + 50;
-  var color = this.generateColor();
+  if (color === undefined) {
+    var color = this.generateColor();
+  }
   var widthAndHeight = this.defaultRadius*2;
 
   element.position.x = x;
@@ -80,6 +82,11 @@ Dot.prototype.createObject = function(x, y){
 
   this.setupEvents(element);
   return this.element;
+}
+
+Dot.cloneElement = function(dotElement) {
+  var dot = new Dot(dotElement.position.x, dotElement.position.y, dotElement.lineColor);
+  return dot.element;
 }
 
 Dot.prototype.updateHitArea = function() {
@@ -138,8 +145,56 @@ Dot.prototype.release = function(){
  * Generate color for the dot
 */
 Dot.prototype.generateColor = function(){
-  var chosenColor = Dot.Defaults.availableColors[randomTo(Dot.Defaults.availableColors.length)];
+  var randomIndex = randomTo(Dot.Defaults.availableColors.length);
+  var chosenColor = Dot.Defaults.availableColors[randomIndex];
   return chosenColor;
+}
+
+/*
+ * Animate when hovering the dot
+*/
+Dot.prototype.animateHover = function(){
+  var copyDot = Dot.cloneElement(this.element);
+  copyDot.position = this.element.position.clone();
+  copyDot.interactive = false;
+
+  var tweenScale = new TWEEN.Tween(copyDot.scale);
+  tweenScale.to({ x: 2, y: 2 }, 350);
+  tweenScale.start();
+
+  var tweenAlpha = new TWEEN.Tween(copyDot);
+  tweenAlpha.to({ alpha: 0 }, 400);
+  tweenAlpha.onComplete(function(){
+    this.clear;
+    stage.removeChild(this);
+  }.bind(copyDot));
+  tweenAlpha.start();
+
+  stage.addChild(copyDot);
+}
+
+/*
+ * Function to connect to another point.
+ * Draws a line that connects all points.
+*/
+Dot.prototype.connectTo = function(dot) {
+  this.drawLineTo(dot.element.position);
+}
+
+Dot.prototype.drawLineTo = function(point) {
+  var x = point.x;
+  var y = point.y;
+  var line = this.line = new PIXI.Graphics();
+  var color = this.element.lineColor;
+
+  line.beginFill(color);
+  line.lineStyle(this.defaultRadius/2, color);
+  line.moveTo(this.element.position.x, this.element.position.y);
+  line.lineTo(x, y);
+  line.endFill();
+
+  DotsController.lines.push(line);
+  stage.addChild(line);
 }
 
 Dot.constructor = Dot;
@@ -226,6 +281,7 @@ DotMatrix.repopulate = function(){
 */
 var DotsController = {
   connectedDots: [],
+  lines: [],
   userPoints: 0,
   timeLeft: 60,
   isMouseDown: false,
@@ -249,6 +305,11 @@ DotsController.hoverDot = function(dot) {
 
   if (length == 0 || dot.canConnect(this.connectedDots[length - 1])) {
     dot.connected = true;
+    if (length > 0) {
+      // Connects to the last dot
+      dot.connectTo(this.connectedDots[length - 1]);
+    }
+
     dot.animateHover();
     this.connectedDots.push(dot);
   }
@@ -266,6 +327,13 @@ DotsController.releaseDots = function(){
     dot.connected = false;
   }
 
+  for (i in DotsController.lines) {
+    var line = DotsController.lines[i];
+    line.clear();
+    stage.removeChild(line);
+  }
+
+  DotsController.lines = [];
   DotMatrix.repopulate();
   DotsController.connectedDots = [];
 }
