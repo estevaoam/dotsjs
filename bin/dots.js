@@ -299,19 +299,22 @@ DotsController.start = function(){
  * receive the dot that it's over
 */
 DotsController.hoverDot = function(dot) {
-  if (dot.connected) { return true; };
-
   var length = this.connectedDots.length;
 
   if (length == 0 || dot.canConnect(this.connectedDots[length - 1])) {
-    dot.connected = true;
+    if (dot.connected !== true) {
+      this.connectedDots.push(dot);
+      dot.connected = true;
+    } else {
+      DotsController.increasePoints(1);
+    }
+
     if (length > 0) {
       // Connects to the last dot
       dot.connectTo(this.connectedDots[length - 1]);
     }
 
     dot.animateHover();
-    this.connectedDots.push(dot);
   }
 }
 
@@ -321,7 +324,6 @@ DotsController.releaseDots = function(){
 
     if (DotsController.connectedDots.length > 1) {
       DotMatrix.releaseDot(dot);
-      DotsController.increasePoints(1);
     }
 
     dot.connected = false;
